@@ -12,12 +12,22 @@ app.get('/', (req, res) => {
   res.sendFile(__dirname + '/views/index.html')
 });
 
-app.post("/api/users", (req, res) => {
+// I know is kind messy, but it works fine and i try to use the 42 indentation, is the easiest way to see the indentation well
+app.route("/api/users").post((req, res) => 
+{
   const new_user = new user(req.body);
-  new_user.save((err, result) =>{
+  new_user.save((err, result) =>
+  {
     if (err)
-      return res.send({error: err});
-    res.send(result);
+      return res.status(204).send({error: err});
+    res.status(201).send(result);
+  })
+}).get((req, res) => {
+  user.find((err, result) => 
+  {
+    if (err)
+      return res.status(204).send({error: err});
+    res.status(200).send(result)
   })
 })
 
