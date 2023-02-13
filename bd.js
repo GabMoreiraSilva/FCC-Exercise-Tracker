@@ -1,19 +1,19 @@
 const mongoose = require('mongoose')
+const { Schema } = mongoose;
 require('dotenv').config()
 
 mongoose.connect(`mongodb+srv://gabmoreira:${process.env.SENHA}@freecodecamp-gmoreira.5mklk3n.mongodb.net/?retryWrites=true&w=majority`)
 
-const User = new mongoose.Schema({
-  username:  {type: String, required: true},
-  count: {type: Number},
-  log: []
-},{ versionKey: false });
-
-const Exercise = new mongoose.Schema({
-  username:  {type: User},
+const Exercise = new Schema({
   description: {type: String, required: true},
   duration:   {type: Number, required: true},
-  date: { type: Date, default: Date.now }
+  date: { type: String}
+}, { versionKey: false })
+
+const User = new Schema({
+  username:  {type: String, required: true},
+  count: {type: Number},
+  log: [{type: Schema.Types.ObjectId, ref: 'exercise' }]
 },{ versionKey: false });
 
 const user = mongoose.model("user", User);
