@@ -31,29 +31,49 @@ app.route("/api/users").post((req, res) => {
 })
 
 app.route('/api/users/:_id/exercises').post((req, res) =>{
-  if(req.body.date === '')
-    req.body.date = new Date().toISOString().split('T')[0]
+  if((req.body.date === '') || (req.body.date === undefined))
+    req.body.date = new Date().toDateString()
+  req.body.date = new Date(req.body.date.split('-')).toDateString()
   const new_exercise = new exercise(req.body)
   new_exercise.save((err, result) =>{
     if (err)
       return res.status(204).send({error: err})
-    user.findByIdAndUpdate(req.params._id, {$push:{log:result._id}}, (err, result) =>{
-      let output = {}
-      output['_id'] = req.params._id
-      output['username'] = result.username
-      output['date'] = req.body.date
-      output['duration'] = parseInt(req.body.duration)
-      output['description'] = req.body.description
-      return res.status(200).send(output)
+    user.findByIdAndUpdate(req.params._id, {$push:{log:result._id}}, (err, result) => {
+      if (err)
+        return res.send(err)
+    })
+    user.find({_id: req.params._id}, (err, result) => {
+      if(err)
+        return res.status(204).send({error: err})
+      if(result[0] === undefined)
+        return res.status(500).send({error: "User not found"})
+      return res.send({'username':result[0]['username'],'description':req.body.description,'duration':parseInt(req.body.duration),"date":req.body.date,'_id':result[0]._id})
     })
   })
 })
 
 app.get("/api/users/:_id/logs", (req, res) =>{
-  user.findById(req.params._id).populate('log').exec((err, result) =>{
-    if (err)
-      return res.status(501).send({error: err})
-    return res.status(200).send(result)
+  data = user.findById(req.params._id).populate('log', '-_id')
+  data.exec((err, result) => {
+    if(req.query.limit)
+    {
+      let exclude = result.log.length - parseInt(req.query.limit)
+      for(let x = 0; x < exclude; x++)
+      {
+        result.log.pop()
+      }
+    }
+    if(req.query.from)
+    {
+      for(let i = 0; i < result.log.length; i++)
+      {
+        if (!(Math.floor(Date.now(result.log[i].date) / 1000) >= Math.floor(Date.now(req.query.from) / 1000)) && !(Math.floor(Date.now(result.log[i].date) / 1000) <= Math.floor(Date.now(req.query.to) / 1000)))
+        {
+          result.pop(i);
+        }
+      }
+    }
+    return res.status(200).send({_id: result._id, username: result.username, count: result.log.length, log: result.log})
   })
 })
 
